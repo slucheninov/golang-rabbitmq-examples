@@ -10,7 +10,7 @@ go mod download
 
 ```bash
 export export RABBITMQ_DSN=amqp://guest:guest@10.16.1.3/
-go run producer.go
+go run publisher.go
 ```
 
 ### Running consumer
