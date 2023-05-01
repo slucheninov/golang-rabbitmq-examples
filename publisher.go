@@ -3,11 +3,13 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/streadway/amqp"
 )
 
 func main() {
+	start := time.Now()
 	connection, err := amqp.Dial(os.Getenv("RABBITMQ_DSN"))
 	if err != nil {
 		log.Fatal(err)
@@ -50,7 +52,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	duration := time.Since(start)
 	log.Println("Queue status:", queue)
-	log.Println("Successfully published message")
+	log.Println("Successfully published message", " - ", duration)
 }

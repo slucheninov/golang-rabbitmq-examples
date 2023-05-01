@@ -1,5 +1,4 @@
-FROM golang:alpine as builder
-
+FROM --platform=linux/amd64 golang:1.20.3-alpine3.16 as builder
 WORKDIR /app
 
 COPY publisher.go publisher.go
@@ -8,16 +7,15 @@ COPY go.mod go.mod
 COPY go.sum go.sum
 
 RUN go get -d -v
-RUN CGO_ENABLED=0 GOOS=linux go build -o publisher publisher.go
-RUN CGO_ENABLED=0 GOOS=linux go build -o consumer consumer.go
 
-FROM alpine:3.16
+ARG BUILD_OPTS='-i' 
+RUN go build ${BUILD_OPT} -o publisher publisher.go
+RUN go build ${BUILD_OPT} -o consumer consumer.go
 
-RUN apk update && apk add ca-certificates
+FROM --platform=linux/amd64 alpine:3.16
 
-COPY --from=builder /app/publisher publisher
-COPY --from=builder /app/consumer consumer
+RUN apk update && apk add ca-certificates && apk add bash
 
-ENV RABBITMQ_DSN ""
+COPY --from=builder /app/publisher /usr/local/bin/publisher
+COPY --from=builder /app/consumer /usr/local/bin/consumer
 
-ENTRYPOINT [ "./consumer" ]

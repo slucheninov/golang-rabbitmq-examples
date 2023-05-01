@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amqproxy-testing
+  labels:
+    app: amqproxy-testing
+    app.kubernetes.io/name: amqproxy-testing
+  namespace: default
+  #namespace: rabbitmq-testing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: amqproxy-testing
+  template:
+    metadata:
+      labels:
+        app: amqproxy-testing
+        app.kubernetes.io/name: amqproxy-testing
+        #sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+      - name: amqproxy-testing
+        image: cloudamqp/amqproxy:v0.8.6
+        resources:
+          limits:
+            cpu: 100m
+            memory: 20Mi
+          requests:
+            cpu: 50m
+            memory: 10Mi
+        env:
+          - name: LISTEN_ADDRESS
+            value: 0.0.0.0
+          - name: LISTEN_PORT
+            value: "1027"
+          - name: AMQP_URL
+            value: amqp://k8s-rabbitmq-testing.rabbitmq-testing.svc.cluster.local
+        ports:
+        - containerPort: 1027
+          name: tcp-amqp
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                - us-central1-c
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: amqproxy-testing
+  annotations:
+    cloud.google.com/neg: '{"ingress":true}'
+    service.kubernetes.io/topology-aware-hints: "auto"
+  namespace: default
+  labels:
+    app: amqproxy-testing
+spec:
+  ports:
+  - appProtocol: amqp
+    name: amqp
+    port: 1027
+    protocol: TCP
+    targetPort: 1027
+  selector:
+    app.kubernetes.io/name: amqproxy-testing
+  type: ClusterIP

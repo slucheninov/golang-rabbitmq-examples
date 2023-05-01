@@ -3,18 +3,20 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/streadway/amqp"
 )
 
 func main() {
+	start := time.Now()
 	connection, err := amqp.Dial(os.Getenv("RABBITMQ_DSN"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer connection.Close()
-
-	log.Println("Successfully connected to RabbitMQ")
+	duration := time.Since(start)
+	log.Println("Successfully connected to RabbitMQ", " - ", duration)
 
 	// opening a channel over the connection established to interact with RabbitMQ
 	channel, err := connection.Channel()
@@ -23,6 +25,7 @@ func main() {
 	}
 	defer channel.Close()
 
+	start = time.Now()
 	// declaring consumer with its properties over channel opened
 	msgs, err := channel.Consume(
 		"testing", // queue
@@ -36,12 +39,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	duration = time.Since(start)
 	// print consumed messages from queue
 	forever := make(chan bool)
 	go func() {
 		for msg := range msgs {
-			log.Printf("Received Message: %s\n", msg.Body)
+			log.Printf("Received Message: %s - %v\n", msg.Body, duration)
 		}
 	}()
 

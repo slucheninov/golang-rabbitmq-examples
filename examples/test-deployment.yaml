@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: golang-rabbitmq-testing
+  labels:
+    app: golang-rabbitmq-testing
+  namespace: default
+  #namespace: rabbitmq-testing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: golang-rabbitmq-testing
+  template:
+    metadata:
+      labels:
+        app: golang-rabbitmq-testing
+        #sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+      - name: golang-rabbitmq-testing
+        image: autosetup/golang-rabbitmq-examples:0.0.7
+        command:
+          - /bin/sh
+          - -c
+        args:
+          - >
+            /usr/local/bin/publisher &&
+            /usr/local/bin/consumer
+        resources:
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 500m
+            memory: 256Mi
+        env:
+        - name: RABBITMQ_DSN
+          value: amqp://guest:guest@amqproxy-testing.default.svc.cluster.local:1027
+
+      # tolerations:
+      # - effect: NoExecute
+      #   key: dedicated
+      #   operator: Equal
+      #   value: rabbitmq-testing
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                - us-central1-c
+
